@@ -28,8 +28,8 @@ lemmatizer = WordNetLemmatizer()
 def load_model():
 
     model = joblib.load("best_resume_classifier.pkl")
-    vectorizer = joblib.load("vectorizer.pkl")
-    label_encoder = joblib.load("label_encoder.pkl")
+    vectorizer = joblib.load("xgb_vectorizer.pkl")
+    label_encoder = joblib.load("new_label_encoder.pkl")
 
     return model, vectorizer, label_encoder
 
