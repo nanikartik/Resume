@@ -27,9 +27,9 @@ lemmatizer = WordNetLemmatizer()
 @st.cache_resource
 def load_model():
 
-    model = joblib.load("best_resume_classifier.pkl")
-    vectorizer = joblib.load("xgb_vectorizer.pkl")
-    label_encoder = joblib.load("new_label_encoder.pkl")
+    model = joblib.load("nb_model.pkl")
+    vectorizer = joblib.load("vectorizer_nb.pkl")
+    label_encoder = joblib.load("label_encoder_nb.pkl")
 
     return model, vectorizer, label_encoder
 
