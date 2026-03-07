@@ -80,64 +80,80 @@ st.set_page_config(page_title="Resume Classifier", layout="wide")
 
 st.title("📄 Resume Job Role Classifier")
 
-st.markdown("Upload a resume and click **Classify** to predict the job role.")
+st.markdown(
+"""
+Upload **PDF / DOC / DOCX** resume or paste resume text to predict the job role.
+"""
+)
 
 model, vectorizer, label_encoder = load_model()
 
-# Upload file
-uploaded_file = st.file_uploader(
-    "Upload Resume",
-    type=["pdf", "doc", "docx"]
-)
+tab1, tab2 = st.tabs(["📁 Upload Resume", "✏️ Paste Text"])
 
 resume_text = ""
 
-if uploaded_file:
+with tab1:
 
-    with st.spinner("Extracting text from resume..."):
-        resume_text = extract_text(uploaded_file)
+    uploaded_file = st.file_uploader(
+        "Upload Resume",
+        type=["pdf", "doc", "docx"]
+    )
 
-    if resume_text:
-        st.success("Resume text extracted successfully")
+    if uploaded_file:
 
-        st.text_area(
-            "Extracted Resume Text",
-            resume_text,
-            height=200
-        )
+        with st.spinner("Extracting text from resume..."):
+            resume_text = extract_text(uploaded_file)
 
-if st.button("🚀 CLASSIFY", type="primary"):
+        if resume_text:
+            st.success("Text extracted successfully")
+            st.text_area("Extracted Resume Text", resume_text, height=200)
 
-    if resume_text.strip():
+with tab2:
 
-        cleaned = clean_text(resume_text)
+    resume_text = st.text_area(
+        "Paste resume text here",
+        height=250
+    )
 
-        vec = vectorizer.transform([cleaned])
 
-        pred = model.predict(vec)[0]
-        probs = model.predict_proba(vec)[0]
+col1, col2 = st.columns([1,3])
 
-        role = label_encoder.inverse_transform([pred])[0]
+with col1:
 
-        st.balloons()
+    if st.button("🚀 CLASSIFY", type="primary"):
 
-        st.success(
-            f"🎯 Predicted Role: **{role.replace('_',' ').title()}**"
-        )
+        if resume_text.strip():
 
-        confidence = np.max(probs) * 100
+            with st.spinner("Analyzing resume..."):
 
-        st.info(f"Confidence: {confidence:.2f}%")
+                cleaned = clean_text(resume_text)
 
-        prob_df = pd.DataFrame({
-            "Role": label_encoder.classes_,
-            "Probability": probs
-        }).set_index("Role")
+                vec = vectorizer.transform([cleaned])
 
-        st.bar_chart(prob_df)
+                pred = model.predict(vec)[0]
+                probs = model.predict_proba(vec)[0]
 
-    else:
-        st.error("Please upload a resume first.")
+                role = label_encoder.inverse_transform([pred])[0]
+
+                st.balloons()
+
+                st.success(
+                    f"🎯 Predicted Role: **{role.replace('_',' ').title()}**"
+                )
+
+                confidence = np.max(probs) * 100
+
+                st.info(f"Confidence: {confidence:.2f}%")
+
+                prob_df = pd.DataFrame({
+                    "Role": label_encoder.classes_,
+                    "Probability": probs
+                }).set_index("Role")
+
+                st.bar_chart(prob_df)
+
+        else:
+            st.error("Please upload a resume or paste text first.")
 
 
 st.markdown("---")
