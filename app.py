@@ -104,7 +104,9 @@ if uploaded_file:
             "Extracted Resume Text",
             resume_text,
             height=200
-        )if st.button("🚀 CLASSIFY", type="primary"):
+        )
+
+if st.button("🚀 CLASSIFY", type="primary"):
 
     if resume_text.strip():
 
