@@ -137,7 +137,7 @@ if st.button("🚀 CLASSIFY", type="primary"):
         st.bar_chart(prob_df)
 
     else:
-        st.error("Please upload a resume or paste text first.")
+        st.error("Please upload a resume first.")
 
 
 st.markdown("---")
