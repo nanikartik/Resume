@@ -33,7 +33,7 @@ def load_model():
     tfidf = data["vectorizer"]
     label_encoder = data["label_encoder"]
 
-    return model, vectorizer, label_encoder
+    #return model, vectorizer, label_encoder
 
 
 def clean_text(text):
