@@ -117,7 +117,7 @@ if st.button("🚀 CLASSIFY", type="primary"):
         vec = vectorizer.transform([cleaned])
 
         pred = model.predict(vec)[0]
-        probs = model.predict_proba(vec)[0]
+        #probs = model.predict_proba(vec)[0]
 
         role = label_encoder.inverse_transform([pred])[0]
 
