@@ -141,6 +141,37 @@ if uploaded_file:
     # Similarity
     sim_score = similarity_score(vector)
 
+    # -----------------------
+    # Most Similar Resume(change 9 starts)
+    # -----------------------
+    
+    similarity = cosine_similarity(vector, train_vectors)
+    
+    best_index = similarity.argmax()
+    best_score = similarity.max()
+    
+    best_match = train_data.iloc[best_index]
+    
+    st.subheader("Most Similar Resume in Training Data")
+    
+    col5, col6 = st.columns(2)
+    
+    col5.metric("Matched Role", best_match["job_role"])
+    col6.metric("Similarity Score", f"{best_score:.2f}")
+    
+    # Show top keywords from matched resume
+    match_text = best_match["clean_resume"]
+    
+    match_keywords = []
+    
+    for k in keywords:
+        if k.lower() in match_text.lower():
+            match_keywords.append(k)
+    
+    if match_keywords:
+        st.write("Common Skills With Matched Resume:")
+        st.write(match_keywords[:8])#change 9 ends
+
     st.success(f"Predicted Role: **{role}**")
 
     col1, col2 = st.columns(2)
