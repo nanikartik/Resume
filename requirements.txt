@@ -6,4 +6,5 @@ xgboost
 nltk
 pdfplumber
 python-docx
+matplotlib
 joblib
