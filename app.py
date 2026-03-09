@@ -219,6 +219,42 @@ if uploaded_file:
     col3.metric("Word Count", word_count)
     col4.metric("Skill Keywords Found", len(found))
 
+    #change 9
+    # -----------------------
+    # Candidate Fit Score
+    # -----------------------
+    
+    st.subheader("Candidate Fit Evaluation")
+    
+    # Skill score
+    skill_score = len(found) / len(keywords)
+    
+    # Weighted score calculation
+    fit_score = (
+        (confidence * 0.4) +
+        (sim_score * 0.4) +
+        (skill_score * 0.2)
+    ) * 100
+    
+    fit_score = min(fit_score, 100)
+    
+    # Recommendation
+    if fit_score >= 80:
+        recommendation = "Strong Candidate"
+    elif fit_score >= 60:
+        recommendation = "Potential Fit"
+    elif fit_score >= 40:
+        recommendation = "Needs Review"
+    else:
+        recommendation = "Low Match"
+    
+    col7, col8 = st.columns(2)
+    
+    col7.metric("Candidate Fit Score", f"{fit_score:.0f} / 100")
+    col8.metric("Hiring Recommendation", recommendation)
+    
+    st.progress(int(fit_score))
+
 
     # -----------------------
     # Candidate strength
