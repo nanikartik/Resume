@@ -111,15 +111,6 @@ uploaded_file = st.file_uploader(
     type=["docx","pdf"]
 )#change 3
 
-keywords = [
-    "python","sql","machine learning","deep learning","nlp",
-    "pandas","numpy","scikit","tensorflow","pytorch",
-    "excel","power bi","tableau",
-    "react","javascript","html","css",
-    "java","spring","hibernate",
-    "aws","azure","gcp","docker","kubernetes",
-    "peopletools","peoplesoft","workday","fscm","hcm"
-    ]#change 5
 
 if uploaded_file:
 
@@ -149,37 +140,6 @@ if uploaded_file:
 
     # Similarity
     sim_score = similarity_score(vector)
-
-    # -----------------------
-    # Most Similar Resume(change 9 starts)
-    # -----------------------
-    
-    similarity = cosine_similarity(vector, train_vectors)
-    
-    best_index = similarity.argmax()
-    best_score = similarity.max()
-    
-    best_match = train_data.iloc[best_index]
-    
-    st.subheader("Most Similar Resume in Training Data")
-    
-    col5, col6 = st.columns(2)
-    
-    col5.metric("Matched Role", best_match["job_role"])
-    col6.metric("Similarity Score", f"{best_score:.2f}")
-    
-    # Show top keywords from matched resume
-    match_text = best_match["clean_resume"]
-    
-    match_keywords = []
-    
-    for k in keywords:
-        if k.lower() in match_text.lower():
-            match_keywords.append(k)
-    
-    if match_keywords:
-        st.write("Common Skills With Matched Resume:")
-        st.write(match_keywords[:8])#change 9 ends
 
     st.success(f"Predicted Role: **{role}**")
 
@@ -216,15 +176,15 @@ if uploaded_file:
     # Skill keyword analysis
     # -----------------------
 
-    # keywords = [
-    #     "python","sql","machine learning","deep learning","nlp",
-    #     "pandas","numpy","scikit","tensorflow","pytorch",
-    #     "excel","power bi","tableau",
-    #     "react","javascript","html","css",
-    #     "java","spring","hibernate",
-    #     "aws","azure","gcp","docker","kubernetes",
-    #     "peopletools","peoplesoft","workday","fscm","hcm"
-    #     ]#change 5
+    keywords = [
+        "python","sql","machine learning","deep learning","nlp",
+        "pandas","numpy","scikit","tensorflow","pytorch",
+        "excel","power bi","tableau",
+        "react","javascript","html","css",
+        "java","spring","hibernate",
+        "aws","azure","gcp","docker","kubernetes",
+        "peopletools","peoplesoft","workday","fscm","hcm"
+        ]#change 5
 
     found = []
 
