@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from docx import Document
 from sklearn.metrics.pairwise import cosine_similarity
 import os
+import pdfplumber #change 1
 
 # NLTK
 import nltk
@@ -69,6 +70,20 @@ def extract_docx(file):
 
     return " ".join(text)
 
+#change 2
+def extract_pdf(file): 
+
+    text = ""
+
+    with pdfplumber.open(file) as pdf:
+
+        for page in pdf.pages:
+            page_text = page.extract_text()
+
+            if page_text:
+                text += page_text + " "
+
+    return text
 
 # ---------------------------
 # Similarity calculation
@@ -91,13 +106,20 @@ st.title("AI Resume Classifier for HR")
 
 st.write("Upload a resume to automatically classify job role and evaluate candidate strength.")
 
-uploaded_file = st.file_uploader("Upload Resume (.docx)", type=["docx"])
+uploaded_file = st.file_uploader(
+    "Upload Resume (.docx or .pdf)",
+    type=["docx","pdf"]
+)#change 3
 
 
 if uploaded_file:
 
-    # Extract
-    raw_text = extract_docx(uploaded_file)
+    # Extract (change 4)
+    if uploaded_file.name.endswith(".docx"):
+        raw_text = extract_docx(uploaded_file)
+
+    elif uploaded_file.name.endswith(".pdf"):
+        raw_text = extract_pdf(uploaded_file)
 
     # Clean
     cleaned = clean_text(raw_text)
@@ -155,23 +177,33 @@ if uploaded_file:
     # -----------------------
 
     keywords = [
-        "python","sql","machine learning","deep learning",
-        "excel","power bi","tableau","react","java",
-        "aws","docker","kubernetes"
-    ]
+        "python","sql","machine learning","deep learning","nlp",
+        "pandas","numpy","scikit","tensorflow","pytorch",
+        "excel","power bi","tableau",
+        "react","javascript","html","css",
+        "java","spring","hibernate",
+        "aws","azure","gcp","docker","kubernetes",
+        "peopletools","peoplesoft","workday","fscm","hcm"
+        ]#change 5
 
     found = []
 
     for k in keywords:
-        if k in cleaned:
-            found.append(k)
+        if k.lower() in cleaned.lower():
+            found.append(k)#change 6
 
     st.subheader("Detected Skills")
 
     if found:
-        st.write(found)
+        st.success("Skills detected in resume:")
+    
+        cols = st.columns(4)
+
+        for i, skill in enumerate(found):
+            cols[i % 4].write("✔ " + skill)
+
     else:
-        st.write("No major keywords detected")
+        st.warning("No major keywords detected")#change 7
 
 
     # -----------------------
@@ -200,8 +232,9 @@ if uploaded_file:
 
     st.write(f"This candidate is estimated to be stronger than **{int(percentile)}%** of resumes in the training set.")
 
-    st.write("Cleaned Resume Text")
-    st.write(cleaned)
+    if st.button("View Clean Resume Text"):
+        st.subheader("Cleaned Resume Text")
+        st.write(cleaned) #change 8
 
     st.write("Top probabilities")
 
