@@ -1,147 +1,209 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+import pickle
 import re
-import pdfplumber
-import docx
-import joblib
-import nltk
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from docx import Document
+from sklearn.metrics.pairwise import cosine_similarity
+import os
 
+# NLTK
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
+# Download resources (safe even if already installed)
+nltk.download('stopwords')
+nltk.download('wordnet')
 
-try:
-    nltk.data.find("corpora/stopwords")
-except:
-    nltk.download("stopwords")
-
-try:
-    nltk.data.find("corpora/wordnet")
-except:
-    nltk.download("wordnet")
-
-stop_words = set(stopwords.words("english"))
+# Define NLP tools
+stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
-@st.cache_resource
-def load_model():
+# ---------------------------
+# Load assets
+# ---------------------------
 
-    data = joblib.load("resume_svm_classifier.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    svm_model = data["model"]
-    tfidf = data["vectorizer"]
-    label_encoder = data["label_encoder"]
+model = pickle.load(open(os.path.join(BASE_DIR, "nb_model3.pkl"), "rb"))
+vectorizer = pickle.load(open(os.path.join(BASE_DIR, "vectorizer_nb3.pkl"), "rb"))
+label_encoder = pickle.load(open(os.path.join(BASE_DIR, "label_encoder_nb3.pkl"), "rb"))
+train_data = pickle.load(open(os.path.join(BASE_DIR, "training_resumes_nb3.pkl"), "rb"))
 
-    return svm_model, tfidf, label_encoder
+# Precompute training vectors for similarity
+train_vectors = vectorizer.transform(train_data["clean_resume"])
 
+
+# ---------------------------
+# Improved Text Cleaning
+# ---------------------------
 
 def clean_text(text):
 
     text = str(text).lower()
-    text = re.sub(r"http\S+|www\S+|https\S+", "", text)
-    text = re.sub(r"\W", " ", text)
-    text = re.sub(r"\d+", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
+
+    text = re.sub(r'http\S+|www\S+', ' ', text)
+    text = re.sub(r'[^a-zA-Z0-9+#. ]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
 
     words = text.split()
-    words = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
+
+    words = [lemmatizer.lemmatize(word) for word in words if word not in stop_words]
 
     return " ".join(words)
 
 
-def extract_text(file):
+# ---------------------------
+# Extract text from DOCX
+# ---------------------------
 
-    try:
+def extract_docx(file):
 
-        # PDF
-        if file.name.endswith(".pdf"):
-            with pdfplumber.open(file) as pdf:
-                text = " ".join(page.extract_text() or "" for page in pdf.pages)
-                return text
+    doc = Document(file)
+    text = []
 
-        # DOCX
-        elif file.name.endswith(".docx"):
-            doc = docx.Document(file)
-            return " ".join([p.text for p in doc.paragraphs])
+    for para in doc.paragraphs:
+        text.append(para.text)
 
-        # DOC (basic fallback)
-        elif file.name.endswith(".doc"):
-            try:
-                return file.read().decode(errors="ignore")
-            except:
-                return ""
-
-    except Exception as e:
-        st.error(f"File reading error: {e}")
-
-    return ""
+    return " ".join(text)
 
 
-st.set_page_config(page_title="Resume Classifier", layout="wide")
+# ---------------------------
+# Similarity calculation
+# ---------------------------
 
-st.title("📄 Resume Job Role Classifier")
+def similarity_score(resume_vector):
 
-st.markdown("Upload a resume and click **Classify** to predict the job role.")
+    similarity = cosine_similarity(resume_vector, train_vectors)
 
-model, vectorizer, label_encoder = load_model()
+    max_sim = similarity.max()
 
-# Upload file
-uploaded_file = st.file_uploader(
-    "Upload Resume",
-    type=["pdf", "doc", "docx"]
-)
+    return max_sim
 
-resume_text = ""
+
+# ---------------------------
+# Streamlit UI
+# ---------------------------
+
+st.title("AI Resume Classifier for HR")
+
+st.write("Upload a resume to automatically classify job role and evaluate candidate strength.")
+
+uploaded_file = st.file_uploader("Upload Resume (.docx)", type=["docx"])
+
 
 if uploaded_file:
 
-    with st.spinner("Extracting text from resume..."):
-        resume_text = extract_text(uploaded_file)
+    # Extract
+    raw_text = extract_docx(uploaded_file)
 
-    if resume_text:
-        st.success("Resume text extracted successfully")
+    # Clean
+    cleaned = clean_text(raw_text)
 
-        st.text_area(
-            "Extracted Resume Text",
-            resume_text,
-            height=200
-        )
+    # Vectorize
+    vector = vectorizer.transform([cleaned])
 
-if st.button("🚀 CLASSIFY", type="primary"):
+    # Predict
+    prediction = model.predict(vector)[0]
+    role = label_encoder.inverse_transform([prediction])[0]
 
-    if resume_text.strip():
+    # Probabilities
+    probs = model.predict_proba(vector)[0]
+    roles = label_encoder.classes_
 
-        cleaned = clean_text(resume_text)
+    # Confidence score
+    confidence = probs.max()
 
-        vec = vectorizer.transform([cleaned])
+    # Similarity
+    sim_score = similarity_score(vector)
 
-        pred = model.predict(vec)[0]
-        
-        probs = model.predict_proba(vec)[0]
+    st.success(f"Predicted Role: **{role}**")
 
-        role = label_encoder.inverse_transform([pred])[0]
+    col1, col2 = st.columns(2)
 
-        st.balloons()
+    col1.metric("Model Confidence", f"{confidence:.2f}")
+    col2.metric("Similarity to Training Resumes", f"{sim_score:.2f}")
 
-        st.success(
-            f"🎯 Predicted Role: **{role.replace('_',' ').title()}**"
-        )
 
-        confidence = np.max(probs) * 100
+    # -----------------------
+    # Confidence Graph
+    # -----------------------
 
-        st.info(f"Confidence: {confidence:.2f}%")
+    st.subheader("Prediction Confidence by Role")
 
-        prob_df = pd.DataFrame({
-            "Role": label_encoder.classes_,
-            "Probability": probs
-        }).set_index("Role")
+    fig, ax = plt.subplots()
 
-        st.bar_chart(prob_df)
+    bars = ax.barh(roles, probs)
 
+    # highlight predicted class
+    for bar, r in zip(bars, roles):
+        if r == role:
+            bar.set_alpha(1.0)
+        else:
+            bar.set_alpha(0.4)
+
+    ax.set_xlabel("Probability")
+    ax.set_title("Role Classification Confidence")
+
+    st.pyplot(fig)
+
+
+    # -----------------------
+    # Skill keyword analysis
+    # -----------------------
+
+    keywords = [
+        "python","sql","machine learning","deep learning",
+        "excel","power bi","tableau","react","java",
+        "aws","docker","kubernetes"
+    ]
+
+    found = []
+
+    for k in keywords:
+        if k in cleaned:
+            found.append(k)
+
+    st.subheader("Detected Skills")
+
+    if found:
+        st.write(found)
     else:
-        st.error("Please upload a resume first.")
+        st.write("No major keywords detected")
 
 
-st.markdown("---")
-st.caption("Resume classification system built with Streamlit.")
+    # -----------------------
+    # Resume metrics
+    # -----------------------
+
+    word_count = len(cleaned.split())
+
+    st.subheader("Resume Metrics")
+
+    col3, col4 = st.columns(2)
+
+    col3.metric("Word Count", word_count)
+    col4.metric("Skill Keywords Found", len(found))
+
+
+    # -----------------------
+    # Candidate strength
+    # -----------------------
+
+    percentile = sim_score * 100
+
+    st.subheader("Candidate Strength vs Training Data")
+
+    st.progress(int(percentile))
+
+    st.write(f"This candidate is estimated to be stronger than **{int(percentile)}%** of resumes in the training set.")
+
+    st.write("Cleaned Resume Text")
+    st.write(cleaned)
+
+    st.write("Top probabilities")
+
+    for r,p in zip(roles, probs):
+        st.write(r, round(p,3))
