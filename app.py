@@ -111,6 +111,15 @@ uploaded_file = st.file_uploader(
     type=["docx","pdf"]
 )#change 3
 
+    keywords = [
+        "python","sql","machine learning","deep learning","nlp",
+        "pandas","numpy","scikit","tensorflow","pytorch",
+        "excel","power bi","tableau",
+        "react","javascript","html","css",
+        "java","spring","hibernate",
+        "aws","azure","gcp","docker","kubernetes",
+        "peopletools","peoplesoft","workday","fscm","hcm"
+        ]#change 5
 
 if uploaded_file:
 
@@ -207,15 +216,15 @@ if uploaded_file:
     # Skill keyword analysis
     # -----------------------
 
-    keywords = [
-        "python","sql","machine learning","deep learning","nlp",
-        "pandas","numpy","scikit","tensorflow","pytorch",
-        "excel","power bi","tableau",
-        "react","javascript","html","css",
-        "java","spring","hibernate",
-        "aws","azure","gcp","docker","kubernetes",
-        "peopletools","peoplesoft","workday","fscm","hcm"
-        ]#change 5
+    # keywords = [
+    #     "python","sql","machine learning","deep learning","nlp",
+    #     "pandas","numpy","scikit","tensorflow","pytorch",
+    #     "excel","power bi","tableau",
+    #     "react","javascript","html","css",
+    #     "java","spring","hibernate",
+    #     "aws","azure","gcp","docker","kubernetes",
+    #     "peopletools","peoplesoft","workday","fscm","hcm"
+    #     ]#change 5
 
     found = []
 
