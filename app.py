@@ -106,173 +106,178 @@ st.title("AI Resume Classifier for HR")
 
 st.write("Upload a resume to automatically classify job role and evaluate candidate strength.")
 
-uploaded_file = st.file_uploader(
-    "Upload Resume (.docx or .pdf)",
-    type=["docx","pdf"]
-)#change 3
+uploaded_files = st.file_uploader(
+    "Upload Resumes (.docx)",
+    type=["docx"],
+    accept_multiple_files=True
+)
 
 
-if uploaded_file:
+if uploaded_files:
 
-    # Extract (change 4)
-    if uploaded_file.name.endswith(".docx"):
-        raw_text = extract_docx(uploaded_file)
+    for uploaded_file in uploaded_files:
 
-    elif uploaded_file.name.endswith(".pdf"):
-        raw_text = extract_pdf(uploaded_file)
+        st.divider()
+        st.header(f"Resume: {uploaded_file.name}")
 
-    # Clean
-    cleaned = clean_text(raw_text)
+        # -----------------------
+        # Extract
+        # -----------------------
 
-    # Vectorize
-    vector = vectorizer.transform([cleaned])
+        if uploaded_file.name.endswith(".docx"):
+            raw_text = extract_docx(uploaded_file)
 
-    # Predict
-    prediction = model.predict(vector)[0]
-    role = label_encoder.inverse_transform([prediction])[0]
+        elif uploaded_file.name.endswith(".pdf"):
+            raw_text = extract_pdf(uploaded_file)
 
-    # Probabilities
-    probs = model.predict_proba(vector)[0]
-    roles = label_encoder.classes_
+        # Clean
+        cleaned = clean_text(raw_text)
 
-    # Confidence score
-    confidence = probs.max()
+        # Vectorize
+        vector = vectorizer.transform([cleaned])
 
-    # Similarity
-    sim_score = similarity_score(vector)
+        # Predict
+        prediction = model.predict(vector)[0]
+        role = label_encoder.inverse_transform([prediction])[0]
 
-    st.success(f"Predicted Role: **{role}**")
+        # Probabilities
+        probs = model.predict_proba(vector)[0]
+        roles = label_encoder.classes_
 
-    col1, col2 = st.columns(2)
+        # Confidence score
+        confidence = probs.max()
 
-    col1.metric("Model Confidence", f"{confidence:.2f}")
-    col2.metric("Similarity to Training Resumes", f"{sim_score:.2f}")
+        # Similarity
+        sim_score = similarity_score(vector)
 
+        st.success(f"Predicted Role: **{role}**")
 
-    # -----------------------
-    # Confidence Graph
-    # -----------------------
+        col1, col2 = st.columns(2)
 
-    st.subheader("Prediction Confidence by Role")
+        col1.metric("Model Confidence", f"{confidence:.2f}")
+        col2.metric("Similarity to Training Resumes", f"{sim_score:.2f}")
 
-    fig, ax = plt.subplots()
+        # -----------------------
+        # Confidence Graph
+        # -----------------------
 
-    bars = ax.barh(roles, probs)
+        st.subheader("Prediction Confidence by Role")
 
-    # highlight predicted class
-    for bar, r in zip(bars, roles):
-        if r == role:
-            bar.set_alpha(1.0)
+        fig, ax = plt.subplots()
+
+        bars = ax.barh(roles, probs)
+
+        for bar, r in zip(bars, roles):
+            if r == role:
+                bar.set_alpha(1.0)
+            else:
+                bar.set_alpha(0.4)
+
+        ax.set_xlabel("Probability")
+        ax.set_title("Role Classification Confidence")
+
+        st.pyplot(fig)
+
+        # -----------------------
+        # Skill keyword analysis
+        # -----------------------
+
+        keywords = [
+            "python","sql","machine learning","deep learning","nlp",
+            "pandas","numpy","scikit","tensorflow","pytorch",
+            "excel","power bi","tableau",
+            "react","javascript","html","css",
+            "java","spring","hibernate",
+            "aws","azure","gcp","docker","kubernetes",
+            "peopletools","peoplesoft","workday","fscm","hcm"
+        ]
+
+        found = []
+
+        for k in keywords:
+            if k.lower() in cleaned.lower():
+                found.append(k)
+
+        st.subheader("Detected Skills")
+
+        if found:
+
+            st.success("Skills detected in resume:")
+
+            cols = st.columns(4)
+
+            for i, skill in enumerate(found):
+                cols[i % 4].write("✔ " + skill)
+
         else:
-            bar.set_alpha(0.4)
+            st.warning("No major keywords detected")
 
-    ax.set_xlabel("Probability")
-    ax.set_title("Role Classification Confidence")
+        # -----------------------
+        # Resume metrics
+        # -----------------------
 
-    st.pyplot(fig)
+        word_count = len(cleaned.split())
 
+        st.subheader("Resume Metrics")
 
-    # -----------------------
-    # Skill keyword analysis
-    # -----------------------
+        col3, col4 = st.columns(2)
 
-    keywords = [
-        "python","sql","machine learning","deep learning","nlp",
-        "pandas","numpy","scikit","tensorflow","pytorch",
-        "excel","power bi","tableau",
-        "react","javascript","html","css",
-        "java","spring","hibernate",
-        "aws","azure","gcp","docker","kubernetes",
-        "peopletools","peoplesoft","workday","fscm","hcm"
-        ]#change 5
+        col3.metric("Word Count", word_count)
+        col4.metric("Skill Keywords Found", len(found))
 
-    found = []
+        # -----------------------
+        # Candidate Fit Score
+        # -----------------------
 
-    for k in keywords:
-        if k.lower() in cleaned.lower():
-            found.append(k)#change 6
+        st.subheader("Candidate Fit Evaluation")
 
-    st.subheader("Detected Skills")
+        skill_score = len(found) / len(keywords)
 
-    if found:
-        st.success("Skills detected in resume:")
-    
-        cols = st.columns(4)
+        fit_score = (
+            (confidence * 0.4) +
+            (sim_score * 0.4) +
+            (skill_score * 0.2)
+        ) * 100
 
-        for i, skill in enumerate(found):
-            cols[i % 4].write("✔ " + skill)
+        fit_score = min(fit_score, 100)
 
-    else:
-        st.warning("No major keywords detected")#change 7
+        if fit_score >= 80:
+            recommendation = "Strong Candidate"
+        elif fit_score >= 60:
+            recommendation = "Potential Fit"
+        elif fit_score >= 40:
+            recommendation = "Needs Review"
+        else:
+            recommendation = "Low Match"
 
+        col7, col8 = st.columns(2)
 
-    # -----------------------
-    # Resume metrics
-    # -----------------------
+        col7.metric("Candidate Fit Score", f"{fit_score:.0f} / 100")
+        col8.metric("Hiring Recommendation", recommendation)
 
-    word_count = len(cleaned.split())
+        st.progress(int(fit_score))
 
-    st.subheader("Resume Metrics")
+        # -----------------------
+        # Candidate strength
+        # -----------------------
 
-    col3, col4 = st.columns(2)
+        percentile = sim_score * 100
 
-    col3.metric("Word Count", word_count)
-    col4.metric("Skill Keywords Found", len(found))
+        st.subheader("Candidate Strength vs Training Data")
 
-    #change 9
-    # -----------------------
-    # Candidate Fit Score
-    # -----------------------
-    
-    st.subheader("Candidate Fit Evaluation")
-    
-    # Skill score
-    skill_score = len(found) / len(keywords)
-    
-    # Weighted score calculation
-    fit_score = (
-        (confidence * 0.4) +
-        (sim_score * 0.4) +
-        (skill_score * 0.2)
-    ) * 100
-    
-    fit_score = min(fit_score, 100)
-    
-    # Recommendation
-    if fit_score >= 80:
-        recommendation = "Strong Candidate"
-    elif fit_score >= 60:
-        recommendation = "Potential Fit"
-    elif fit_score >= 40:
-        recommendation = "Needs Review"
-    else:
-        recommendation = "Low Match"
-    
-    col7, col8 = st.columns(2)
-    
-    col7.metric("Candidate Fit Score", f"{fit_score:.0f} / 100")
-    col8.metric("Hiring Recommendation", recommendation)
-    
-    st.progress(int(fit_score))
+        st.progress(int(percentile))
 
+        st.write(
+            f"This candidate is estimated to be stronger than **{int(percentile)}%** of resumes in the training set."
+        )
 
-    # -----------------------
-    # Candidate strength
-    # -----------------------
+        if st.button(f"View Clean Resume Text - {uploaded_file.name}"):
 
-    percentile = sim_score * 100
+            st.subheader("Cleaned Resume Text")
 
-    st.subheader("Candidate Strength vs Training Data")
+            st.write(cleaned)
 
-    st.progress(int(percentile))
+        st.write("Top probabilities")
 
-    st.write(f"This candidate is estimated to be stronger than **{int(percentile)}%** of resumes in the training set.")
-
-    if st.button("View Clean Resume Text"):
-        st.subheader("Cleaned Resume Text")
-        st.write(cleaned) #change 8
-
-    st.write("Top probabilities")
-
-    for r,p in zip(roles, probs):
-        st.write(r, round(p,3))
+        for r, p in zip(roles, probs):
+            st.write(r, round(p, 3))
