@@ -115,6 +115,8 @@ uploaded_files = st.file_uploader(
 
 if uploaded_files:
 
+    results = []
+
     for uploaded_file in uploaded_files:
 
         st.divider()
@@ -256,6 +258,16 @@ if uploaded_files:
         col8.metric("Hiring Recommendation", recommendation)
 
         st.progress(int(fit_score))
+        results.append({
+        "Candidate": uploaded_file.name,
+        "Predicted Role": role,
+        "Fit Score": round(fit_score,2),
+        "Model Confidence": round(confidence,2),
+        "Similarity Score": round(sim_score,2),
+        "Skills Found": len(found),
+        "Word Count": word_count,
+        "Recommendation": recommendation
+    })
 
         # -----------------------
         # Candidate strength
@@ -281,3 +293,36 @@ if uploaded_files:
 
         for r, p in zip(roles, probs):
             st.write(r, round(p, 3))
+        # -----------------------
+        # Candidate Ranking Table
+        # -----------------------
+
+        if results:
+
+            summary_df = pd.DataFrame(results)
+
+            # Rank candidates
+            summary_df = summary_df.sort_values(
+                by="Fit Score",
+                ascending=False
+            ).reset_index(drop=True)
+
+            summary_df["Rank"] = summary_df.index + 1
+
+            summary_df = summary_df[
+                [
+                    "Rank",
+                    "Candidate",
+                    "Predicted Role",
+                    "Fit Score",
+                    "Model Confidence",
+                    "Similarity Score",
+                    "Skills Found",
+                    "Recommendation"
+                ]
+            ]
+
+            st.divider()
+            st.header("Candidate Ranking Summary")
+
+            st.dataframe(summary_df, use_container_width=True)
