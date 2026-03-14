@@ -259,15 +259,15 @@ if uploaded_files:
 
         st.progress(int(fit_score))
         results.append({
-        "Candidate": uploaded_file.name,
-        "Predicted Role": role,
-        "Fit Score": round(fit_score,2),
-        "Model Confidence": round(confidence,2),
-        "Similarity Score": round(sim_score,2),
-        "Skills Found": len(found),
-        "Word Count": word_count,
-        "Recommendation": recommendation
-    })
+            "Candidate": uploaded_file.name,
+            "Predicted Role": role,
+            "Fit Score": round(fit_score,2),
+            "Model Confidence": round(confidence,2),
+            "Similarity Score": round(sim_score,2),
+            "Skills Found": len(found),
+            "Word Count": word_count,
+            "Recommendation": recommendation
+        })
 
         # -----------------------
         # Candidate strength
@@ -293,27 +293,71 @@ if uploaded_files:
 
         for r, p in zip(roles, probs):
             st.write(r, round(p, 3))
+
         # -----------------------
         # Candidate Ranking Table
         # -----------------------
 
-        if results:
+    if results:
 
-            summary_df = pd.DataFrame(results)
+        summary_df = pd.DataFrame(results)
 
-            # Rank candidates
-            summary_df = summary_df.sort_values(
+        # -----------------------
+        # Overall Ranking Summary
+        # -----------------------
+
+        summary_df = summary_df.sort_values(
+            by="Fit Score",
+            ascending=False
+        ).reset_index(drop=True)
+
+        summary_df["Rank"] = summary_df.index + 1
+
+        summary_df = summary_df[
+            [
+                "Rank",
+                "Candidate",
+                "Predicted Role",
+                "Fit Score",
+                "Model Confidence",
+                "Similarity Score",
+                "Skills Found",
+                "Recommendation"
+            ]
+        ]
+
+        st.divider()
+        st.header("Candidate Ranking Summary")
+
+        st.dataframe(summary_df, use_container_width=True)
+
+
+        # -----------------------
+        # Rank Candidates by Role
+        # -----------------------
+
+        st.divider()
+        st.header("Candidates Ranked by Job Role")
+
+        grouped_roles = summary_df.groupby("Predicted Role")
+
+        best_candidates = []
+
+        for role, group in grouped_roles:
+
+            st.subheader(f"{role} Candidates")
+
+            ranked = group.sort_values(
                 by="Fit Score",
                 ascending=False
             ).reset_index(drop=True)
 
-            summary_df["Rank"] = summary_df.index + 1
+            ranked["Rank"] = ranked.index + 1
 
-            summary_df = summary_df[
+            ranked = ranked[
                 [
                     "Rank",
                     "Candidate",
-                    "Predicted Role",
                     "Fit Score",
                     "Model Confidence",
                     "Similarity Score",
@@ -322,7 +366,57 @@ if uploaded_files:
                 ]
             ]
 
-            st.divider()
-            st.header("Candidate Ranking Summary")
+            st.dataframe(ranked, use_container_width=True)
 
-            st.dataframe(summary_df, use_container_width=True)
+            best = ranked.iloc[0]
+
+            best_candidates.append({
+                "Role": role,
+                "Best Candidate": best["Candidate"],
+                "Fit Score": best["Fit Score"],
+                "Confidence": best["Model Confidence"],
+                "Skills": best["Skills Found"]
+            })
+
+
+        # -----------------------
+        # HR Hiring Recommendations
+        # -----------------------
+
+        st.divider()
+        st.header("HR Hiring Recommendations")
+
+        best_df = pd.DataFrame(best_candidates)
+
+        st.dataframe(best_df, use_container_width=True)
+
+
+        # -----------------------
+        # HR Explanation
+        # -----------------------
+
+        st.subheader("Hiring Explanation")
+
+        for _, row in best_df.iterrows():
+
+            st.write(
+                f"✔ **{row['Best Candidate']}** is the strongest match for **{row['Role']}** "
+                f"with a Fit Score of **{row['Fit Score']}**, strong model confidence, "
+                f"and **{row['Skills']} detected technical skills**."
+            )
+
+
+        # -----------------------
+        # HR Visualization
+        # -----------------------
+
+        st.subheader("Top Candidate Score by Role")
+
+        fig3, ax3 = plt.subplots()
+
+        ax3.bar(best_df["Role"], best_df["Fit Score"])
+
+        ax3.set_ylabel("Fit Score")
+        ax3.set_title("Best Candidate Per Role")
+
+        st.pyplot(fig3)
