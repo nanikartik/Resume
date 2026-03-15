@@ -8,8 +8,8 @@ from docx import Document
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 import pdfplumber #change 1
-import zipfile
-from io import BytesIO
+# import zipfile
+# from io import BytesIO
 
 # NLTK
 import nltk
@@ -123,44 +123,13 @@ if uploaded_files:
 
         st.divider()
         st.header(f"Resume: {uploaded_file.name}")
-
-        # -----------------------
-        # Handle ZIP files
-        # -----------------------
         
-        files_to_process = []
+        # Extract
+        if uploaded_file.name.endswith(".docx"):
+            raw_text = extract_docx(uploaded_file)
         
-        if uploaded_file.name.endswith(".zip"):
-        
-            with zipfile.ZipFile(uploaded_file) as z:
-        
-                for file_name in z.namelist():
-        
-                    if file_name.endswith(".docx") or file_name.endswith(".pdf"):
-        
-                        file_data = BytesIO(z.read(file_name))
-        
-                        files_to_process.append((file_name, file_data))
-        
-        else:
-        
-            files_to_process.append((uploaded_file.name, uploaded_file))
-        
-        
-        # -----------------------
-        # Process extracted files
-        # -----------------------
-        
-        for file_name, file_data in files_to_process:
-        
-            st.divider()
-            st.header(f"Resume: {file_name}")
-        
-            if file_name.endswith(".docx"):
-                raw_text = extract_docx(file_data)
-        
-            elif file_name.endswith(".pdf"):
-                raw_text = extract_pdf(file_data)
+        elif uploaded_file.name.endswith(".pdf"):
+            raw_text = extract_pdf(uploaded_file)
         # Clean
         cleaned = clean_text(raw_text)
 
@@ -288,7 +257,7 @@ if uploaded_files:
 
         st.progress(int(fit_score))
         results.append({
-            "Candidate": file_name,
+            "Candidate": uploaded_file.name,
             "Predicted Role": role,
             "Fit Score": round(fit_score,2),
             "Model Confidence": round(confidence,2),
