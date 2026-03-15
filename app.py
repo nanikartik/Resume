@@ -288,7 +288,7 @@ if uploaded_files:
 
         st.progress(int(fit_score))
         results.append({
-            "Candidate": uploaded_file.name,
+            "Candidate": file_name,
             "Predicted Role": role,
             "Fit Score": round(fit_score,2),
             "Model Confidence": round(confidence,2),
