@@ -420,3 +420,52 @@ if uploaded_files:
         ax3.set_title("Best Candidate Per Role")
 
         st.pyplot(fig3)
+        # -----------------------
+        # Export Results to Excel (Role-wise sheets)
+        # -----------------------
+
+        st.divider()
+        st.header("Download Results as Excel")
+
+        excel_file = "Resume_Ranking_Output.xlsx"
+
+        with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+
+            # Group by role
+            for role, group in summary_df.groupby("Predicted Role"):
+
+                role_df = group.sort_values(
+                    by="Fit Score",
+                    ascending=False
+                ).reset_index(drop=True)
+
+                role_df["Rank"] = role_df.index + 1
+
+                role_df = role_df[
+                    [
+                        "Rank",
+                        "Candidate",
+                        "Fit Score",
+                        "Model Confidence",
+                        "Similarity Score",
+                        "Skills Found",
+                        "Recommendation"
+                    ]
+                ]
+
+                sheet_name = role[:31]   # Excel sheet name limit
+
+                role_df.to_excel(
+                    writer,
+                    sheet_name=sheet_name,
+                    index=False
+                )
+
+        with open(excel_file, "rb") as f:
+
+            st.download_button(
+                label="Download Excel Report",
+                data=f,
+                file_name="Resume_Ranking_Output.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
