@@ -429,7 +429,7 @@ if uploaded_files:
 
         excel_file = "Resume_Ranking_Output.xlsx"
 
-        with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+        with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
 
             # Group by role
             for role, group in summary_df.groupby("Predicted Role"):
