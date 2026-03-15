@@ -8,6 +8,8 @@ from docx import Document
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 import pdfplumber #change 1
+import zipfile
+from io import BytesIO
 
 # NLTK
 import nltk
@@ -107,8 +109,8 @@ st.title("AI Resume Classifier for HR")
 st.write("Upload a resume to automatically classify job role and evaluate candidate strength.")
 
 uploaded_files = st.file_uploader(
-    "Upload Resumes (.docx)",
-    type=["docx"],
+    "Upload Resumes (.docx, .pdf, .zip)",
+    type=["docx", "pdf", "zip"],
     accept_multiple_files=True
 )
 
@@ -123,15 +125,42 @@ if uploaded_files:
         st.header(f"Resume: {uploaded_file.name}")
 
         # -----------------------
-        # Extract
+        # Handle ZIP files
         # -----------------------
-
-        if uploaded_file.name.endswith(".docx"):
-            raw_text = extract_docx(uploaded_file)
-
-        elif uploaded_file.name.endswith(".pdf"):
-            raw_text = extract_pdf(uploaded_file)
-
+        
+        files_to_process = []
+        
+        if uploaded_file.name.endswith(".zip"):
+        
+            with zipfile.ZipFile(uploaded_file) as z:
+        
+                for file_name in z.namelist():
+        
+                    if file_name.endswith(".docx") or file_name.endswith(".pdf"):
+        
+                        file_data = BytesIO(z.read(file_name))
+        
+                        files_to_process.append((file_name, file_data))
+        
+        else:
+        
+            files_to_process.append((uploaded_file.name, uploaded_file))
+        
+        
+        # -----------------------
+        # Process extracted files
+        # -----------------------
+        
+        for file_name, file_data in files_to_process:
+        
+            st.divider()
+            st.header(f"Resume: {file_name}")
+        
+            if file_name.endswith(".docx"):
+                raw_text = extract_docx(file_data)
+        
+            elif file_name.endswith(".pdf"):
+                raw_text = extract_pdf(file_data)
         # Clean
         cleaned = clean_text(raw_text)
 
